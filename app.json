@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "DocuSynth",
+    "slug": "docusynth",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "DocuSynth requiere acceso a la cámara para digitalizar y analizar documentos con IA."
+        }
+      ]
+    ]
+  }
+}
