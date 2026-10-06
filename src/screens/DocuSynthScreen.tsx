@@ -5,11 +5,11 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   ActivityIndicator,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { DocumentCameraModal } from '../components/DocumentCameraModal';
 import { ProcessedDocument } from '../types/scanner.types';
@@ -17,13 +17,24 @@ import { DocumentAnalysisResult } from '../types/gemini.types';
 import { analyzeDocumentWithGemini } from '../services/geminiService';
 import { useDocumentChat } from '../hooks/useDocumentChat';
 
+// Componentes modulares del Sistema de Diseño Stitch
+import { StatusHeroCard } from '../components/results/StatusHeroCard';
+import { ExecutiveSummaryCard } from '../components/results/ExecutiveSummaryCard';
+import { ExtractedDataGrid } from '../components/results/ExtractedDataGrid';
+import { FloatingChatBar } from '../components/chat/FloatingChatBar';
+import { DocumentChatDrawer } from '../components/chat/DocumentChatDrawer';
+
 export const DocuSynthScreen: React.FC = () => {
+  // ==========================================
+  // ESTADO Y LÓGICA DE NEGOCIO (INMUTABLE)
+  // ==========================================
   const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
   const [questionInput, setQuestionInput] = useState('');
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
 
-  // Hook reactivo para el Chat contextualizado con el documento
+  // Hook reactivo de Chat contextualizado con el documento
   const {
     messages,
     isReplying,
@@ -32,6 +43,7 @@ export const DocuSynthScreen: React.FC = () => {
     clearChat,
   } = useDocumentChat(analysisResult?.contexto_documento || null);
 
+  // Invocación a Gemini multimodal conservando flujo original
   const handleCaptureCompleted = async (doc: ProcessedDocument) => {
     setIsCameraVisible(false);
     setAnalyzing(true);
@@ -54,125 +66,128 @@ export const DocuSynthScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Header */}
+        {/* ========================================================
+            HEADER PRINCIPAL - STITCH MOBILE UI
+           ======================================================== */}
         <View style={styles.header}>
-          <Text style={styles.brandTitle}>DocuSynth</Text>
-          <Text style={styles.brandSubtitle}>Escáner Multimodal & Q&A IA</Text>
-        </View>
-
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Botón de captura o re-escaneo */}
           <TouchableOpacity
-            style={styles.scanButton}
+            style={styles.headerCircleBtn}
             onPress={() => setIsCameraVisible(true)}
-            disabled={analyzing}
           >
-            <Text style={styles.scanButtonText}>
-              {analysisResult ? '📷 Escanear Otro Documento' : '📷 Escanear Documento'}
-            </Text>
+            <Text style={styles.headerIconText}>‹</Text>
           </TouchableOpacity>
 
+          <View style={styles.headerCenterInfo}>
+            <View style={styles.headerPillBadge}>
+              <Text style={styles.headerPillText}>DOCUSYNTH AI • OCR MULTIMODAL</Text>
+            </View>
+            <Text style={styles.headerDocumentTitle} numberOfLines={1}>
+              {analysisResult ? 'Documento Sintetizado' : 'Escáner Inteligente'}
+            </Text>
+          </View>
+
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.headerCircleBtn, styles.headerActionBtnActive]}
+              onPress={() => setIsCameraVisible(true)}
+            >
+              <Text style={styles.headerActionIcon}>📷</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerCircleBtn}>
+              <Text style={styles.headerActionIcon}>↗</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ========================================================
+            CONTENIDO SCROLLABLE (PANEL DE RESULTADOS)
+           ======================================================== */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Banner de procesamiento en curso */}
           {analyzing && (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color="#6366F1" />
-              <Text style={styles.loadingText}>Gemini 1.5 Flash sintetizando documento...</Text>
+            <View style={styles.analyzingCard}>
+              <ActivityIndicator size="large" color="#2563EB" />
+              <Text style={styles.analyzingTitle}>Sintetizando Documento con Gemini</Text>
+              <Text style={styles.analyzingSubtitle}>
+                Extrayendo entidades clave, cláusulas y generando contexto neuronal...
+              </Text>
             </View>
           )}
 
-          {/* Resultado de Análisis */}
-          {analysisResult && !analyzing && (
-            <View style={styles.resultsContainer}>
-              <Text style={styles.sectionTitle}>Resumen Ejecutivo</Text>
-              {analysisResult.resumen_ejecutivo.map((punto, index) => (
-                <View key={`res-${index}`} style={styles.bulletItem}>
-                  <Text style={styles.bulletPoint}>•</Text>
-                  <Text style={styles.bulletText}>{punto}</Text>
-                </View>
-              ))}
-
-              <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Entidades Clave</Text>
-              <View style={styles.chipsContainer}>
-                {analysisResult.entidades_clave.map((item, index) => (
-                  <View key={`ent-${index}`} style={styles.chip}>
-                    <Text style={styles.chipCampo}>{item.campo}:</Text>
-                    <Text style={styles.chipValor}>{item.valor}</Text>
-                  </View>
-                ))}
+          {/* Estado inicial sin documento */}
+          {!analysisResult && !analyzing && (
+            <View style={styles.emptyStateCard}>
+              <View style={styles.emptyIconCircle}>
+                <Text style={styles.emptyIconEmoji}>📄</Text>
               </View>
-
-              {/* Chat Q&A */}
-              <View style={styles.chatSection}>
-                <View style={styles.chatHeader}>
-                  <Text style={styles.sectionTitle}>Pregúntale a DocuSynth</Text>
-                  <TouchableOpacity onPress={clearChat}>
-                    <Text style={styles.clearChatText}>Limpiar Chat</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {messages.length === 0 && (
-                  <Text style={styles.emptyChatText}>
-                    Haz cualquier pregunta sobre fechas, totales, cláusulas o personas mencionadas en el documento.
-                  </Text>
-                )}
-
-                {messages.map((m) => (
-                  <View
-                    key={m.id}
-                    style={[
-                      styles.chatBubble,
-                      m.role === 'user' ? styles.userBubble : styles.modelBubble,
-                    ]}
-                  >
-                    <Text style={styles.bubbleRole}>
-                      {m.role === 'user' ? 'Tú' : 'DocuSynth AI'}
-                    </Text>
-                    <Text style={styles.bubbleContent}>{m.content}</Text>
-                  </View>
-                ))}
-
-                {isReplying && (
-                  <View style={styles.replyingBox}>
-                    <ActivityIndicator size="small" color="#818CF8" />
-                    <Text style={styles.replyingText}>Pensando...</Text>
-                  </View>
-                )}
-
-                {chatError && <Text style={styles.errorText}>{chatError}</Text>}
-              </View>
+              <Text style={styles.emptyStateTitle}>Ningún documento escaneado</Text>
+              <Text style={styles.emptyStateDesc}>
+                Alinea y captura una fotografía de un contrato, factura o recibo para generar la síntesis automática con Gemini 1.5 Flash.
+              </Text>
+              <TouchableOpacity
+                style={styles.primaryScanBtn}
+                onPress={() => setIsCameraVisible(true)}
+              >
+                <Text style={styles.primaryScanBtnText}>⚡ Iniciar Escáner OCR</Text>
+              </TouchableOpacity>
             </View>
+          )}
+
+          {/* ========================================================
+              FASE 02: PANEL DE RESULTADOS CONECTADO A ESTADO REAL
+             ======================================================== */}
+          {analysisResult && !analyzing && (
+            <>
+              {/* Card Azul Degradado: Análisis Inteligente Completado */}
+              <StatusHeroCard
+                summaryCount={analysisResult.resumen_ejecutivo.length}
+                entityCount={analysisResult.entidades_clave.length}
+              />
+
+              {/* SECCIÓN 1: RESUMEN EJECUTIVO (Conectado a analysisResult.resumen_ejecutivo) */}
+              <ExecutiveSummaryCard
+                bullets={analysisResult.resumen_ejecutivo}
+                onRescan={() => setIsCameraVisible(true)}
+              />
+
+              {/* SECCIÓN 2: DATOS EXTRAÍDOS (Conectado a analysisResult.entidades_clave) */}
+              <ExtractedDataGrid entities={analysisResult.entidades_clave} />
+            </>
           )}
         </ScrollView>
 
-        {/* Input de Chat */}
+        {/* ========================================================
+            BARRA DE DISPARO DEL CHAT FLOTANTE (STITCH FASE 02)
+           ======================================================== */}
         {analysisResult && !analyzing && (
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Escribe tu consulta..."
-              placeholderTextColor="#64748B"
-              value={questionInput}
-              onChangeText={setQuestionInput}
-              onSubmitEditing={handleSendQuestion}
-              returnKeyType="send"
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                (!questionInput.trim() || isReplying) && styles.sendButtonDisabled,
-              ]}
-              onPress={handleSendQuestion}
-              disabled={!questionInput.trim() || isReplying}
-            >
-              <Text style={styles.sendButtonText}>Enviar</Text>
-            </TouchableOpacity>
-          </View>
+          <FloatingChatBar onPress={() => setIsChatExpanded(true)} />
         )}
 
-        {/* Modal de Cámara */}
+        {/* ========================================================
+            FASE 03: MODAL / DRAWER DE CHAT CON DOCUMENTO COMPLETA
+           ======================================================== */}
+        <DocumentChatDrawer
+          visible={isChatExpanded}
+          messages={messages}
+          isReplying={isReplying}
+          chatError={chatError}
+          questionInput={questionInput}
+          entityCount={analysisResult?.entidades_clave.length || 0}
+          onClose={() => setIsChatExpanded(false)}
+          onClearChat={clearChat}
+          onChangeQuestionInput={setQuestionInput}
+          onSendQuestion={handleSendQuestion}
+        />
+
+        {/* Modal nativo de cámara (Fase 01) */}
         {isCameraVisible && (
           <DocumentCameraModal
             onCaptureCompleted={handleCaptureCompleted}
@@ -187,206 +202,147 @@ export const DocuSynthScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   container: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-  },
-  brandTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#F8FAFC',
-    letterSpacing: 0.5,
-  },
-  brandSubtitle: {
-    fontSize: 13,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  scanButton: {
-    backgroundColor: '#4F46E5',
-    paddingVertical: 14,
-    borderRadius: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  scanButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  loadingBox: {
-    alignItems: 'center',
-    padding: 30,
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-  },
-  loadingText: {
-    color: '#CBD5E1',
-    marginTop: 12,
-    fontSize: 14,
-  },
-  resultsContainer: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    color: '#F1F5F9',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  bulletItem: {
-    flexDirection: 'row',
-    marginBottom: 6,
-    paddingRight: 10,
-  },
-  bulletPoint: {
-    color: '#818CF8',
-    fontSize: 16,
-    marginRight: 8,
-  },
-  bulletText: {
-    color: '#CBD5E1',
-    fontSize: 14,
-    lineHeight: 20,
-    flex: 1,
-  },
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: '#0F172A',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  chipCampo: {
-    color: '#94A3B8',
-    fontWeight: '600',
-    fontSize: 12,
-    marginRight: 4,
-  },
-  chipValor: {
-    color: '#38BDF8',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  chatSection: {
-    marginTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#334155',
-    paddingTop: 16,
-  },
-  chatHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#F8FAFC',
+  },
+  headerCircleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerIconText: {
+    fontSize: 24,
+    color: '#0F172A',
+    fontWeight: '300',
+    lineHeight: 28,
+  },
+  headerCenterInfo: {
     alignItems: 'center',
   },
-  clearChatText: {
-    color: '#EF4444',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyChatText: {
-    color: '#64748B',
-    fontSize: 13,
-    fontStyle: 'italic',
-    marginTop: 8,
-  },
-  chatBubble: {
+  headerPillBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
     borderRadius: 12,
-    padding: 12,
-    marginTop: 10,
+    marginBottom: 4,
   },
-  userBubble: {
-    backgroundColor: '#3730A3',
-    alignSelf: 'flex-end',
-    maxWidth: '85%',
-  },
-  modelBubble: {
-    backgroundColor: '#0F172A',
-    alignSelf: 'flex-start',
-    maxWidth: '90%',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  bubbleRole: {
+  headerPillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#94A3B8',
-    marginBottom: 4,
-    textTransform: 'uppercase',
+    color: '#2563EB',
+    letterSpacing: 0.5,
   },
-  bubbleContent: {
-    color: '#F8FAFC',
-    fontSize: 14,
-    lineHeight: 20,
+  headerDocumentTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
   },
-  replyingBox: {
+  headerActions: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
-    marginTop: 10,
   },
-  replyingText: {
-    color: '#94A3B8',
-    fontSize: 12,
+  headerActionBtnActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#1D4ED8',
   },
-  errorText: {
-    color: '#F87171',
-    fontSize: 12,
-    marginTop: 8,
+  headerActionIcon: {
+    fontSize: 15,
+    color: '#0F172A',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#1E293B',
-    borderTopWidth: 1,
-    borderTopColor: '#334155',
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 100,
+  },
+  analyzingCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-    color: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 14,
+    marginTop: 20,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
+    shadowColor: '#000000',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  sendButton: {
-    backgroundColor: '#4F46E5',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginLeft: 10,
+  analyzingTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 12,
   },
-  sendButtonDisabled: {
-    opacity: 0.5,
+  analyzingSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
   },
-  sendButtonText: {
+  emptyStateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    marginTop: 40,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyIconEmoji: {
+    fontSize: 32,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  emptyStateDesc: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  primaryScanBtn: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+  },
+  primaryScanBtnText: {
     color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

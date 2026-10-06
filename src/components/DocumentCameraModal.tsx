@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,10 +6,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useDocumentScanner } from '../hooks/useDocumentScanner';
 import { ProcessedDocument } from '../types/scanner.types';
+import { CameraTopBar } from './camera/CameraTopBar';
+import { ViewfinderOverlay } from './camera/ViewfinderOverlay';
+import { CameraControls } from './camera/CameraControls';
 
 interface DocumentCameraModalProps {
   onCaptureCompleted: (document: ProcessedDocument) => void;
@@ -21,6 +25,10 @@ export const DocumentCameraModal: React.FC<DocumentCameraModalProps> = ({
   onCancel,
 }) => {
   const [permission, requestPermission] = useCameraPermissions();
+  const [flashMode, setFlashMode] = useState<'off' | 'on'>('off');
+  const [autoDetect, setAutoDetect] = useState(true);
+
+  // Mantenemos intacto el hook de lógica de captura
   const {
     cameraRef,
     isProcessing,
@@ -29,7 +37,11 @@ export const DocumentCameraModal: React.FC<DocumentCameraModalProps> = ({
   } = useDocumentScanner();
 
   if (!permission) {
-    return <View style={styles.centerContainer}><ActivityIndicator size="large" color="#4F46E5" /></View>;
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#38BDF8" />
+      </View>
+    );
   }
 
   if (!permission.granted) {
@@ -37,13 +49,13 @@ export const DocumentCameraModal: React.FC<DocumentCameraModalProps> = ({
       <SafeAreaView style={styles.centerContainer}>
         <Text style={styles.permissionTitle}>Permiso de Cámara Requerido</Text>
         <Text style={styles.permissionSubtitle}>
-          DocuSynth necesita acceso a la cámara para escanear y analizar tus documentos con IA.
+          DocuSynth requiere acceso a la cámara para capturar y digitalizar el documento.
         </Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={requestPermission}>
-          <Text style={styles.primaryButtonText}>Conceder Permiso</Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <Text style={styles.permissionButtonText}>Habilitar Cámara</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={onCancel}>
-          <Text style={styles.secondaryButtonText}>Cancelar</Text>
+        <TouchableOpacity style={styles.cancelLink} onPress={onCancel}>
+          <Text style={styles.cancelLinkText}>Volver</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -58,45 +70,31 @@ export const DocumentCameraModal: React.FC<DocumentCameraModalProps> = ({
 
   return (
     <View style={styles.container}>
-      <CameraView ref={cameraRef} style={StyleSheet.absoluteFillObject} facing="back">
+      <StatusBar barStyle="light-content" />
+      <CameraView
+        ref={cameraRef}
+        style={StyleSheet.absoluteFillObject}
+        facing="back"
+        enableTorch={flashMode === 'on'}
+      >
         <SafeAreaView style={styles.overlay}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.iconButton} onPress={onCancel}>
-              <Text style={styles.iconButtonText}>✕</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Alinear Documento</Text>
-            <View style={{ width: 40 }} />
-          </View>
+          {/* Top Bar Modular */}
+          <CameraTopBar
+            flashMode={flashMode}
+            onToggleFlash={() => setFlashMode(flashMode === 'off' ? 'on' : 'off')}
+            onClose={onCancel}
+          />
 
-          {/* Guía visual para escanear documento (Viewfinder) */}
-          <View style={styles.viewfinderContainer}>
-            <View style={styles.viewfinder}>
-              <View style={[styles.corner, styles.topLeft]} />
-              <View style={[styles.corner, styles.topRight]} />
-              <View style={[styles.corner, styles.bottomLeft]} />
-              <View style={[styles.corner, styles.bottomRight]} />
-            </View>
-            <Text style={styles.hintText}>
-              Encuadre el documento dentro de las esquinas
-            </Text>
-            {error && <Text style={styles.errorBanner}>{error}</Text>}
-          </View>
+          {/* Viewfinder Neón Cyan Modular */}
+          <ViewfinderOverlay error={error} />
 
-          {/* Footer con botón de captura */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.captureButton, isProcessing && styles.captureButtonDisabled]}
-              onPress={handleCapture}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <View style={styles.captureInnerCircle} />
-              )}
-            </TouchableOpacity>
-          </View>
+          {/* Controls Shutter Modular */}
+          <CameraControls
+            isProcessing={isProcessing}
+            autoDetect={autoDetect}
+            onCapture={handleCapture}
+            onToggleAutoDetect={() => setAutoDetect(!autoDetect)}
+          />
         </SafeAreaView>
       </CameraView>
     </View>
@@ -105,12 +103,13 @@ export const DocumentCameraModal: React.FC<DocumentCameraModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#000000',
+    zIndex: 999,
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0A0F1D',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -118,153 +117,36 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 8,
-    textAlign: 'center',
   },
   permissionSubtitle: {
     fontSize: 14,
     color: '#94A3B8',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     lineHeight: 20,
   },
-  primaryButton: {
-    backgroundColor: '#4F46E5',
-    paddingVertical: 14,
-    paddingHorizontal: 28,
+  permissionButton: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 12,
-    marginBottom: 12,
   },
-  primaryButtonText: {
+  permissionButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 15,
   },
-  secondaryButton: {
-    paddingVertical: 10,
+  cancelLink: {
+    marginTop: 16,
   },
-  secondaryButtonText: {
+  cancelLinkText: {
     color: '#94A3B8',
     fontSize: 14,
   },
   overlay: {
     flex: 1,
     justifyContent: 'space-between',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  viewfinderContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  viewfinder: {
-    width: '85%',
-    aspectRatio: 0.72, // Proporción común A4 / Carta
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 16,
-    position: 'relative',
-  },
-  corner: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    borderColor: '#6366F1',
-  },
-  topLeft: {
-    top: -2,
-    left: -2,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderTopLeftRadius: 16,
-  },
-  topRight: {
-    top: -2,
-    right: -2,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderTopRightRadius: 16,
-  },
-  bottomLeft: {
-    bottom: -2,
-    left: -2,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderBottomLeftRadius: 16,
-  },
-  bottomRight: {
-    bottom: -2,
-    right: -2,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderBottomRightRadius: 16,
-  },
-  hintText: {
-    color: '#E2E8F0',
-    fontSize: 13,
-    marginTop: 16,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  errorBanner: {
-    color: '#EF4444',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginTop: 10,
-    fontSize: 12,
-  },
-  footer: {
-    paddingBottom: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  captureButton: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureButtonDisabled: {
-    opacity: 0.6,
-  },
-  captureInnerCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFFFFF',
   },
 });
