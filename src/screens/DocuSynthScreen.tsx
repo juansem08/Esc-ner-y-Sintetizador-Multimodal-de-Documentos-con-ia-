@@ -21,6 +21,7 @@ import { useDocumentChat } from '../hooks/useDocumentChat';
 import { StatusHeroCard } from '../components/results/StatusHeroCard';
 import { ExecutiveSummaryCard } from '../components/results/ExecutiveSummaryCard';
 import { ExtractedDataGrid } from '../components/results/ExtractedDataGrid';
+import { ErrorBanner } from '../components/results/ErrorBanner';
 import { FloatingChatBar } from '../components/chat/FloatingChatBar';
 import { DocumentChatDrawer } from '../components/chat/DocumentChatDrawer';
 
@@ -31,6 +32,8 @@ export const DocuSynthScreen: React.FC = () => {
   const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [lastCapturedDoc, setLastCapturedDoc] = useState<ProcessedDocument | null>(null);
   const [questionInput, setQuestionInput] = useState('');
   const [isChatExpanded, setIsChatExpanded] = useState(false);
 
@@ -47,11 +50,16 @@ export const DocuSynthScreen: React.FC = () => {
   const handleCaptureCompleted = async (doc: ProcessedDocument) => {
     setIsCameraVisible(false);
     setAnalyzing(true);
+    setAnalysisError(null);
+    setLastCapturedDoc(doc);
     try {
       const result = await analyzeDocumentWithGemini(doc.base64);
       setAnalysisResult(result);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al analizar con Gemini:', err);
+      setAnalysisError(
+        err?.message || 'No se pudo completar el análisis del documento con Gemini.'
+      );
     } finally {
       setAnalyzing(false);
     }
@@ -120,6 +128,19 @@ export const DocuSynthScreen: React.FC = () => {
                 Extrayendo entidades clave, cláusulas y generando contexto neuronal...
               </Text>
             </View>
+          )}
+
+          {/* Banner de error si falla el análisis */}
+          {analysisError && !analyzing && (
+            <ErrorBanner
+              message={analysisError}
+              onRetry={
+                lastCapturedDoc
+                  ? () => handleCaptureCompleted(lastCapturedDoc)
+                  : () => setIsCameraVisible(true)
+              }
+              onDismiss={() => setAnalysisError(null)}
+            />
           )}
 
           {/* Estado inicial sin documento */}
