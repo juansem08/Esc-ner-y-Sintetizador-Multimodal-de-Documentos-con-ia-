@@ -26,6 +26,7 @@ import { FloatingChatBar } from '../components/chat/FloatingChatBar';
 import { DocumentChatDrawer } from '../components/chat/DocumentChatDrawer';
 
 import { validateDocumentPayload } from '../utils/documentValidator';
+import { documentHistoryService } from '../services/historyService';
 
 export const DocuSynthScreen: React.FC = () => {
   // ==========================================
@@ -62,6 +63,7 @@ export const DocuSynthScreen: React.FC = () => {
 
       const result = await analyzeDocumentWithGemini(doc.base64);
       setAnalysisResult(result);
+      documentHistoryService.addRecord(result, doc);
     } catch (err: any) {
       console.error('Error al analizar con Gemini:', err);
       setAnalysisError(

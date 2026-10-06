@@ -1,10 +1,12 @@
 // Types
 export * from './types/gemini.types';
 export * from './types/scanner.types';
+export * from './types/history.types';
 
 // Services
 export * from './services/geminiService';
 export * from './services/chatService';
+export * from './services/historyService';
 
 // Hooks
 export * from './hooks/useDocumentScanner';
