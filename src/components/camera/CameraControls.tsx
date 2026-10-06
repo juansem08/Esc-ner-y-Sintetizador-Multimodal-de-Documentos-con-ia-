@@ -4,6 +4,7 @@ import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'rea
 interface CameraControlsProps {
   isProcessing: boolean;
   autoDetect: boolean;
+  processingLabel?: string;
   onCapture: () => void;
   onToggleAutoDetect: () => void;
 }
@@ -11,42 +12,75 @@ interface CameraControlsProps {
 export const CameraControls: React.FC<CameraControlsProps> = ({
   isProcessing,
   autoDetect,
+  processingLabel,
   onCapture,
   onToggleAutoDetect,
 }) => {
   return (
-    <View style={styles.bottomBar}>
-      <TouchableOpacity style={styles.secondaryActionBtn}>
-        <Text style={styles.secondaryActionIcon}>🖼️</Text>
-      </TouchableOpacity>
+    <View style={styles.container}>
+      {isProcessing && (
+        <View style={styles.processingPill}>
+          <ActivityIndicator color="#00F2FE" size="small" style={{ marginRight: 8 }} />
+          <Text style={styles.processingPillText}>
+            {processingLabel || 'Digitalizando y optimizando documento...'}
+          </Text>
+        </View>
+      )}
 
-      {/* Botón de captura central con doble aro neón */}
-      <TouchableOpacity
-        style={[styles.shutterOuterRing, isProcessing && styles.shutterDisabled]}
-        onPress={onCapture}
-        disabled={isProcessing}
-      >
-        {isProcessing ? (
-          <ActivityIndicator color="#00F2FE" size="large" />
-        ) : (
-          <View style={styles.shutterInnerCircle} />
-        )}
-      </TouchableOpacity>
+      <View style={styles.bottomBar}>
+        <TouchableOpacity style={styles.secondaryActionBtn}>
+          <Text style={styles.secondaryActionIcon}>🖼️</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.autoModeBtn, autoDetect && styles.autoModeBtnActive]}
-        onPress={onToggleAutoDetect}
-      >
-        <Text style={[styles.autoModeText, autoDetect && styles.autoModeTextActive]}>
-          AUTO
-        </Text>
-      </TouchableOpacity>
+        {/* Botón de captura central con doble aro neón */}
+        <TouchableOpacity
+          style={[styles.shutterOuterRing, isProcessing && styles.shutterDisabled]}
+          onPress={onCapture}
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color="#00F2FE" size="large" />
+          ) : (
+            <View style={styles.shutterInnerCircle} />
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.autoModeBtn, autoDetect && styles.autoModeBtnActive]}
+          onPress={onToggleAutoDetect}
+        >
+          <Text style={[styles.autoModeText, autoDetect && styles.autoModeTextActive]}>
+            AUTO
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  processingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 254, 0.4)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  processingPillText: {
+    color: '#E0F2FE',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   bottomBar: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
