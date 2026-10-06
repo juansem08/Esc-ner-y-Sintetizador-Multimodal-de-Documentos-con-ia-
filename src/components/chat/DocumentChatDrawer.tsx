@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { ChatMessage } from '../../types/gemini.types';
+import { SuggestedQuestionsBar } from './SuggestedQuestionsBar';
 
 interface DocumentChatDrawerProps {
   visible: boolean;
@@ -156,6 +157,12 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
               </View>
             )}
           </ScrollView>
+
+          {/* Barra de preguntas sugeridas */}
+          <SuggestedQuestionsBar
+            disabled={isReplying}
+            onSelectQuestion={(q) => onChangeQuestionInput(q)}
+          />
 
           {/* Input activo de chat modal */}
           <View style={styles.modalInputBar}>

@@ -13,6 +13,7 @@ export * from './hooks/useDocumentChat';
 // Components & Screens
 export * from './components/DocumentCameraModal';
 export * from './components/results/ErrorBanner';
+export * from './components/chat/SuggestedQuestionsBar';
 export * from './screens/DocuSynthScreen';
 
 // Utilities
