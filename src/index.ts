@@ -17,3 +17,4 @@ export * from './screens/DocuSynthScreen';
 
 // Utilities
 export * from './utils/documentValidator';
+export * from './utils/exportFormatter';
