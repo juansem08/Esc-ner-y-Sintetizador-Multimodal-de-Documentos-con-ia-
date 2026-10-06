@@ -25,6 +25,8 @@ import { ErrorBanner } from '../components/results/ErrorBanner';
 import { FloatingChatBar } from '../components/chat/FloatingChatBar';
 import { DocumentChatDrawer } from '../components/chat/DocumentChatDrawer';
 
+import { validateDocumentPayload } from '../utils/documentValidator';
+
 export const DocuSynthScreen: React.FC = () => {
   // ==========================================
   // ESTADO Y LÓGICA DE NEGOCIO (INMUTABLE)
@@ -53,6 +55,11 @@ export const DocuSynthScreen: React.FC = () => {
     setAnalysisError(null);
     setLastCapturedDoc(doc);
     try {
+      const validation = validateDocumentPayload(doc);
+      if (!validation.isValid) {
+        throw new Error(validation.error || 'Documento no válido.');
+      }
+
       const result = await analyzeDocumentWithGemini(doc.base64);
       setAnalysisResult(result);
     } catch (err: any) {

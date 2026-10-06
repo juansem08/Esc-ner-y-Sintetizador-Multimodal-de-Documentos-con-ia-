@@ -14,3 +14,6 @@ export * from './hooks/useDocumentChat';
 export * from './components/DocumentCameraModal';
 export * from './components/results/ErrorBanner';
 export * from './screens/DocuSynthScreen';
+
+// Utilities
+export * from './utils/documentValidator';

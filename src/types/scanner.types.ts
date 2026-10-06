@@ -10,3 +10,9 @@ export interface ScannerState {
   error: string | null;
   image: ProcessedDocument | null;
 }
+
+export interface DocumentValidationResult {
+  isValid: boolean;
+  error?: string;
+  approximateSizeMB: number;
+}
