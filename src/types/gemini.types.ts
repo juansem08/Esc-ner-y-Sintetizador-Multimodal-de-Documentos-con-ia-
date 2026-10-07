@@ -15,3 +15,12 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
 }
+
+export type DocumentCategory = 'general' | 'invoice' | 'contract' | 'receipt' | 'id_card';
+
+export interface AnalysisOptions {
+  category?: DocumentCategory;
+  customPrompt?: string;
+  apiKey?: string;
+  temperature?: number;
+}
