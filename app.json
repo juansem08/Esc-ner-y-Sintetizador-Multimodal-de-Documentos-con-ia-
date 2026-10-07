@@ -11,7 +11,8 @@
         {
           "cameraPermission": "DocuSynth requiere acceso a la cámara para digitalizar y analizar documentos con IA."
         }
-      ]
+      ],
+      "expo-asset"
     ]
   }
 }

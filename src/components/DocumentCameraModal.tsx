@@ -73,7 +73,7 @@ export const DocumentCameraModal: React.FC<DocumentCameraModalProps> = ({
       <StatusBar barStyle="light-content" />
       <CameraView
         ref={cameraRef}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         facing="back"
         enableTorch={flashMode === 'on'}
       >
@@ -103,7 +103,11 @@ export const DocumentCameraModal: React.FC<DocumentCameraModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     backgroundColor: '#000000',
     zIndex: 999,
   },
