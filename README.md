@@ -1,12 +1,4 @@
-# DocuSynth 📄⚡
 
-DocuSynth es un escáner multimodal de documentos impulsado por **React Native**, **Expo**, **TypeScript** y el SDK oficial **`@google/genai`** (Gemini 1.5 Flash).
-
----
-
-## 🏗️ Flujo de Arquitectura Multimodal
-
-```text
   [ Captura de Cámara ] (expo-camera)
             │
             ▼
@@ -33,7 +25,7 @@ DocuSynth es un escáner multimodal de documentos impulsado por **React Native**
 
 ---
 
-## 🚀 Características
+## Características
 - **Captura Inteligente**: Encuadre visual para documentos A4/Carta con `expo-camera`.
 - **Pipeline de Optimización**: Redimensión y compresión con `expo-image-manipulator` y codificación Base64 eficiente con `expo-file-system`.
 - **Validación Robusta**: Verificación de tamaño y formato con `documentValidator` antes del envío a la API.
@@ -45,7 +37,7 @@ DocuSynth es un escáner multimodal de documentos impulsado por **React Native**
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```text
 src/
@@ -77,7 +69,7 @@ src/
 
 ---
 
-## 🛠️ Instalación y Configuración
+##  Instalación y Configuración
 
 1. Clona el repositorio e instala las dependencias:
 ```bash
