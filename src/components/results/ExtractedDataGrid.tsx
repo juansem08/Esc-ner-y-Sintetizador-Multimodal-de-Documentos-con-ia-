@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { EntidadClave } from '../../types/gemini.types';
 import { StitchTheme } from '../../theme/stitchTheme';
 
@@ -8,6 +8,18 @@ interface ExtractedDataGridProps {
 }
 
 export const ExtractedDataGrid: React.FC<ExtractedDataGridProps> = ({ entities }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredEntities = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return entities;
+    return entities.filter(
+      (item) =>
+        item.campo.toLowerCase().includes(q) ||
+        item.valor.toLowerCase().includes(q)
+    );
+  }, [entities, searchQuery]);
+
   return (
     <View style={styles.container}>
       <View style={styles.sectionHeaderRow}>
@@ -15,57 +27,85 @@ export const ExtractedDataGrid: React.FC<ExtractedDataGridProps> = ({ entities }
           <Text style={styles.sectionIcon}>🗂️</Text>
           <Text style={styles.sectionHeadingText}>DATOS EXTRAÍDOS</Text>
         </View>
-        <Text style={styles.sectionSubCount}>{entities.length} campos validados</Text>
+        <Text style={styles.sectionSubCount}>
+          {filteredEntities.length} de {entities.length} campos
+        </Text>
       </View>
 
-      <View style={styles.entityGrid}>
-        {entities.map((item, index) => {
-          const styleConfig =
-            StitchTheme.cardPalette[index % StitchTheme.cardPalette.length];
+      {entities.length > 2 && (
+        <View style={styles.searchBarContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Filtrar entidades (ej. total, fecha)..."
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+              <Text style={styles.clearSearchText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
-          return (
-            <View
-              key={`extracted-data-${index}`}
-              style={[
-                styles.entityCard,
-                { backgroundColor: styleConfig.bg, borderColor: styleConfig.border },
-              ]}
-            >
-              <View style={styles.entityCardTop}>
-                <View
-                  style={[styles.entityIconCircle, { backgroundColor: styleConfig.iconBg }]}
-                >
-                  <Text style={styles.entityIconEmoji}>
-                    {styleConfig.defaultIcon}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.entityPillBadge,
-                    { backgroundColor: styleConfig.badgeBg },
-                  ]}
-                >
-                  <Text
+      {filteredEntities.length === 0 ? (
+        <View style={styles.emptyFilterCard}>
+          <Text style={styles.emptyFilterText}>
+            No se encontraron campos que coincidan con "{searchQuery}"
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.entityGrid}>
+          {filteredEntities.map((item, index) => {
+            const styleConfig =
+              StitchTheme.cardPalette[index % StitchTheme.cardPalette.length];
+
+            return (
+              <View
+                key={`extracted-data-${index}`}
+                style={[
+                  styles.entityCard,
+                  { backgroundColor: styleConfig.bg, borderColor: styleConfig.border },
+                ]}
+              >
+                <View style={styles.entityCardTop}>
+                  <View
+                    style={[styles.entityIconCircle, { backgroundColor: styleConfig.iconBg }]}
+                  >
+                    <Text style={styles.entityIconEmoji}>
+                      {styleConfig.defaultIcon}
+                    </Text>
+                  </View>
+                  <View
                     style={[
-                      styles.entityPillBadgeText,
-                      { color: styleConfig.badgeText },
+                      styles.entityPillBadge,
+                      { backgroundColor: styleConfig.badgeBg },
                     ]}
                   >
-                    {styleConfig.badge}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.entityPillBadgeText,
+                        { color: styleConfig.badgeText },
+                      ]}
+                    >
+                      {styleConfig.badge}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <Text style={styles.entityFieldLabel} numberOfLines={1}>
-                {item.campo}
-              </Text>
-              <Text style={styles.entityFieldValue} numberOfLines={2}>
-                {item.valor}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
+                <Text style={styles.entityFieldLabel} numberOfLines={1}>
+                  {item.campo}
+                </Text>
+                <Text style={styles.entityFieldValue} numberOfLines={2}>
+                  {item.valor}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 };
@@ -145,5 +185,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 14,
+  },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0F172A',
+    padding: 0,
+  },
+  clearSearchBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  clearSearchText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '700',
+  },
+  emptyFilterCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+  },
+  emptyFilterText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontStyle: 'italic',
   },
 });
